@@ -11,6 +11,7 @@ import { tap } from "rxjs/operators";
 import { City } from "./models/city";
 import { MatTableDataSource } from "@angular/material/table";
 import { MatPaginator, PageEvent } from "@angular/material/paginator";
+import { MatSort } from "@angular/material/sort";
 
 @Component({
   selector: "app-city",
@@ -18,9 +19,17 @@ import { MatPaginator, PageEvent } from "@angular/material/paginator";
   styleUrls: ["./city.component.scss"],
 })
 export class CityComponent implements OnInit, AfterViewInit {
+  @ViewChild(MatPaginator) paginator: MatPaginator;
+  @ViewChild(MatSort) sort: MatSort;
+
   public displayedColumns: string[] = ["id", "name", "lat", "lon"];
   public dataSource = new MatTableDataSource<City>();
-  @ViewChild(MatPaginator) paginator: MatPaginator;
+  defaultPageIndex: number = 0;
+  defaultPageSize: number = 10;
+  public defaultSortColumn: string = "name";
+  public defaultSortOrder: string = "asc";
+  public filterQuery: string;
+  public defaultFilterColumn: string = "name";
 
   public constructor(
     private http: HttpClient,
@@ -31,9 +40,16 @@ export class CityComponent implements OnInit, AfterViewInit {
 
   public ngAfterViewInit(): void {
     this.dataSource.paginator = this.paginator;
-    const pageEvent = new PageEvent();
-    pageEvent.pageIndex = 0;
-    pageEvent.pageSize = 10;
+    this.loadData();
+  }
+
+  public loadData(query: string = null): void {
+    var pageEvent = new PageEvent();
+    pageEvent.pageIndex = this.defaultPageIndex;
+    pageEvent.pageSize = this.defaultPageSize;
+    if (query) {
+      this.filterQuery = query;
+    }
     this.getData(pageEvent);
   }
 
@@ -41,9 +57,19 @@ export class CityComponent implements OnInit, AfterViewInit {
 
   public getData(event: PageEvent): void {
     const url = this.baseUrl + "api/Cities";
-    const params = new HttpParams()
+    let params = new HttpParams()
       .set("pageIndex", event.pageIndex.toString())
-      .set("pageSize", event.pageSize.toString());
+      .set("pageSize", event.pageSize.toString())
+      .set("sortColumn", this.sort ? this.sort.active : this.defaultSortColumn)
+      .set(
+        "sortOrder",
+        this.sort ? this.sort.direction : this.defaultSortOrder
+      );
+    if (this.filterQuery) {
+      params = params
+        .set("filterColumn", this.defaultFilterColumn)
+        .set("filterQuery", this.filterQuery);
+    }
     this.http
       .get<any>(url, { params })
       .subscribe(
