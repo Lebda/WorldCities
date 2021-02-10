@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Linq.Dynamic.Core;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -23,9 +24,22 @@ namespace WorldCities.Controllers
 
         // GET: api/Countries
         [HttpGet]
-        public async Task<ActionResult<IEnumerable<Country>>> GetCountries()
+        public async Task<ActionResult<ApiResult<Country>>> GetCountries(
+            int pageIndex = 0,
+            int pageSize = 10,
+            string sortColumn = null,
+            string sortOrder = null,
+            string filterColumn = null,
+            string filterQuery = null)
         {
-            return await _context.Countries.ToListAsync();
+            return await ApiResult<Country>.CreateAsync(
+                _context.Countries,
+                pageIndex,
+                pageSize,
+                sortColumn,
+                sortOrder,
+                filterColumn,
+                filterQuery);
         }
 
         // GET: api/Countries/5
@@ -98,6 +112,35 @@ namespace WorldCities.Controllers
             await _context.SaveChangesAsync();
 
             return NoContent();
+        }
+
+        [HttpPost]
+        [Route("IsDupeField")]
+        public bool IsDupeField(
+            int countryId,
+            string fieldName,
+            string fieldValue)
+        {
+            // Default approach (using strongly-typed LAMBA expressions)
+            //switch (fieldName)
+            //{
+            // case "name":
+            // return _context.Countries.Any(c => c.Name == fieldValue);
+            // case "iso2":
+            // return _context.Countries.Any(c => c.ISO2 == fieldValue);
+            // case "iso3":
+            // return _context.Countries.Any(c => c.ISO3 == fieldValue);
+            // default:
+            // return false;
+            //}
+
+            // Alternative approach (using System.Linq.Dynamic.Core)
+            return (ApiResult<Country>.IsValidProperty(fieldName, true))
+                ? _context.Countries.Any(
+                    String.Format("{0} == @0 && Id != @1", fieldName),
+                    fieldValue,
+                    countryId)
+                : false;
         }
 
         private bool CountryExists(int id)
