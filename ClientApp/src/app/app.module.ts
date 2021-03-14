@@ -13,10 +13,12 @@ import { AngularMaterialModule } from "./angular-material.module";
 import { CountriesComponent } from "./country/country.component";
 import { CityEditComponent } from "./city-edit/city-edit.component";
 import { CountryEditComponent } from "./country-edit/country-edit.component";
+import { BaseFormComponent } from "./shared/base.form.component";
 
 @NgModule({
   declarations: [
     AppComponent,
+    BaseFormComponent,
     NavMenuComponent,
     HomeComponent,
     CityComponent,
